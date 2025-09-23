@@ -390,6 +390,8 @@ System.out.println("messageBody = " + messageBody); -> 여기서 메시지 바�
 
 이제 객체를 얻어냈으니 참조값을 통해 멤버변수에 접근하자. 
 
+### 8. HttpServletResponse 역할
+
     
 
 
