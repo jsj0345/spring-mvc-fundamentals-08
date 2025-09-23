@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form action="/request-param" method="post">
+    username: <input type="text" name="username" />
+    age: <input type="text" name="age" />
+    <button type="submit">전송</button>
+</form>
+</body>
+</html>
+
+<!--
+localhost:8080에서 /를 붙이면 webapp까지 포함임
+
+규칙 : src/main/webapp = 웹 루트(Web Root)
+톰캣(WAS)이 이 디렉토리를 그대로 / 경로에 매핑함.
+
+즉, webapp이 있으면 그 아래 구조가 바로 URL 경로
+
+Spring Boot
+
+기본적으로 내잠 톰캣 + JAR 배포 구조라서
+
+src/main/resources 밑에 있는 특정 폴더들이 웹 루트 역할을 함.
+
+url을 입력하고 f12를 눌러서 페이로드에 Form data 확인
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<form action="/request-param" method="post">
+  username: <input type="text" name="username" />
+  age: <input type="text" name="age" />
+  <button type="submit">전송</button>
+</form>
+</body>
+</html>
+
+
+-->
