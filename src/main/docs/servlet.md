@@ -392,7 +392,155 @@ System.out.println("messageBody = " + messageBody); -> 여기서 메시지 바�
 
 ### 8. HttpServletResponse 역할
 
+@WebServlet(name = "responseHeaderServlet" , urlPatterns = "/response-header")
+public class ResponseHeaderServlet extends HttpServlet {
+
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        //[status-line]
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        //[response-headers]
+        //response.setHeader("Content-Type" , "text/plain;charset=utf-8");
+        response.setHeader("Cache-Control" , "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("my-header", "hello");
+
+
+        PrintWriter writer = response.getWriter(); 
+        writer.print("ok"); // ok -> Content-Length:2
+    }
+
+}
+
+HTTP Response Message를 보면 header에 있는 Content-Type, Cache-Control, Pragma, my-header를 위에 작성한 대로 지정할 수가 있다.
+
+앞에서 메시지 바디에 내용을 띄울때 response.getWriter().write("ok"); 이런식으로 썼었다.
+
+getWriter() 메서드는 PrintWriter를 반환한다. 이 반환한 객체를 가지고 write라는 메서드에 접근한 것인데 위처럼 쓰면 메서드 체이닝에 의해서 코드가 간결해보인다.
+
+그런데 단점으로는 매번 getWriter()를 써줘야한다. 그래서 PrintWriter를 담는 변수를 하나 만들고 그 변수를 이용해 메서드를 호출 한 것이다.
+
+두 가지 방법 메시지 바디에 데이터가 들어간다는 것은 동일하다. 
+
+이번엔 편의 메서드를 작성해보자. 
+
+@WebServlet(name = "responseHeaderServlet" , urlPatterns = "/response-header")
+public class ResponseHeaderServlet extends HttpServlet {
+
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        //[status-line]
+        response.setStatus(HttpServletResponse.SC_OK);
+
+        //[response-headers]
+        //response.setHeader("Content-Type" , "text/plain;charset=utf-8");
+        response.setHeader("Cache-Control" , "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("my-header", "hello");
+
+        //[편의성 메서드]
+        content(response);
+        cookie(response);
+        redirect(response); 
+
+        PrintWriter writer = response.getWriter(); 
+        writer.print("ok"); // ok -> Content-Length:2
+    }
+
+    private void content(HttpServletResponse response) {
+        //Content-Type: text/plain;charset=utf-8
+        //Content-Length: 2
+        //response.setHeader("Content-Type", "text/plain;charset=utf-8"); 
+        response.setContentType("text/plain");
+        response.setCharacterEncoding("utf-8");
+        //response.setContentLength(2); //(생략시 자동 생성) 
+    }
+
+    private void cookie(HttpServletResponse response) {
+        //Set-Cookie: myCookie=good; Max-Age=600;
+        //response.setHeader("Set-Cookie", "myCookie=good; Max-age=600");
+        Cookie cookie = new Cookie("myCookie","good");
+        cookie.setMaxAge(600); // 600초
+        response.addCookie(cookie);
+    }
+
+    private void redirect(HttpServletResponse response) {
+        //Status Code 302
+        //Location: /basic/hello-form.html
+        
+        //response.setStatus(HttpServletResponse.SC_FOUND);
+        //response.setHeader("Location", "/basic/hello-form.html");
+        response.sendRedirect("/basic/hello-form.html");
+    }
+}
+
+원래는 setHeader 메서드를 이용해서 바꿔줘야 할 것을 일릴히 다 적어야했다. 
+
+반면에 편의성 메서드는 setContentType과 같이 어떤거를 바꾸고 싶은지 정하고 방식만 적으면되서 좀 덜 적어도되서 편하다. 
+
+### 9. HTTP 응답 데이터 - HTML
+
+코드를 보자. 
+
+@WebServlet(name = "responseHtmlServlet", urlPatterns = "/response-html") 
+public class ResponseHtmlServlet extends HttpServlet {
+  
+  @Override
+  protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+     //Content-Type: text/html;charset=utf-8
+     response.setContentType("text/html");
+     response.setCharacterEncoding("utf-8");
+     
+     PrintWriter writer = response.getWriter();
+     
+     writer.println("<html>");
+     writer.println("<body>");
+     writer.println("   <div>안녕?</div>");
+     writer.println("</body>");
+     writer.println("</html>");
+  }
+
+}
+
+HTTP 응답으로 HTML을 반환할 때는 content-type을 text/html로 지정해야 한다.
+
+페이지 소스 보기를 클릭하면 html 파일이 있는것을 볼 수 있다. 
+
+### 10. HTTP 응답 데이터 - API JSON
+
+@WebServlet(name = "responseJsonServlet", urlPatterns = "/response-json")
+public class ResponseJsonServlet extends HttpServlet {
+  
+  private ObjectMapper objectMapper = new ObjectMapper(); 
+
+  @Override
+  protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
     
+    //Content-Type: application/json
+    response.setHeader("content-type", "application/json");
+    response.setCharacterEncoding("utf-8");
+    
+    HelloData data = new HelloData();
+    data.setUsername("kim");
+    data.setAge(20);
+    
+    //{"username":"kim", "age":20}
+    String result = objectMapper.writeValueAsString(data); // 객체를 JSON문자로 바꿈
+
+    /*
+    readValues()는 JSON방식을 객체로 바꿈.
+    */ 
+    
+    response.getWriter().write(result); // 메시지 바디에 띄움 
+  }
+
+}
+
+HTTP 응답으로 JSON을 반환할 때는 content-type을 application/json으로 지정해야 한다.
+Jackson 라이브러리가 제공하는 objectMapper.writeValueAsString()를 사용하면 객체를 JSON 방식으로 바꿀수있음. 
 
 
 
