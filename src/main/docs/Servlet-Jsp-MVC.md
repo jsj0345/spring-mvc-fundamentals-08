@@ -496,6 +496,295 @@ JSP를 사용한 덕분에 뷰를 생성하는 HTML 작업을 깔끔하게 가�
 
 JSP가 너무 많은 역할을 한다. 
 
+### 3. MVC 패턴 - 개요
+
+하나의 서블릿이나 JSP만으로 비즈니스 로직과 뷰 렌더링까지 모두 처리하게 되면, 너무 많은 역할을 하게되고, 결과적으로 유지보수가 어려워진다.
+
+비즈니스 로직을 호출하는 부분에 변경이 발생해도 해당 코드를 손대야 하고, 할 일이 있어도 비즈니스 로직이 함께 있는
+
+해당 파일을 수정해야 한다. HTML 코드 하나 수정해야 하는데 수백줄 자바 코드가 함께 있다고 상상하면 끔찍하다.
+
+**Model, View, Controller**
+
+MVC 패턴은 지금까지 학습한 것 처럼 하나의 서블릿이나. JSP로 처리하던 것을 컨트롤러와 뷰라는 영역으로 서로 역할을 나눈 것을 말한다. 
+
+웹 애플리케이션은 보통 이 MVC 패턴을 사용한다.
+
+- 컨트롤러: HTTP 요청을 받아서 파라미터를 검증하고, 비즈니스 로직을 실행한다. 그리고 뷰에 전달할 결과 데이터를 조회해서 모델에 담는다.
+
+- 모델: 뷰에 출력할 데이터를 담아둔다. 뷰가 필요한 데이터를 모두 모델에 담아서 전달해주는 덕분에 뷰는 비즈니스 로직이나 데이터 접근을 몰라도 되고,
+
+화면에 렌더링 하는 일에 집중할 수 있다. 
+
+- 뷰 : 모델에 담겨있는 데이터를 사용해서 화면에 그리는 일에 집중한다. 여기서는 HTML을 생성하는 부분을 말한다. 
+
+
+### 4. MVC 패턴 - 적용
+
+**회원 등록 폼 - 컨트롤러**
+
+```java
+package hello.servlet.web.servletmvc;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+@WebServlet(name = "mvcMemberFormServlet", urlPatterns = "/servlet-mvc/members/new-form")
+public class MvcMemberFormServlet extends HttpServlet {
+   @Override
+   protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+     String viewPath = "/WEB-INF/views/new-form.jsp";
+     RequestDispatcher dispatcher = request.getRequestDispatcher(viewPath);
+     dispatcher.forward(request, response);
+   }
+}
+```
+
+Dispatcher라는 용어는 서블릿에서 요청 흐름을 다른 자원(컨트롤러, 뷰 등)으로 전달하는 역할을 하는 객체를 말함.
+
+구체적으로는 RequestDispatcher라는 인터페이스를 사용해서 요청을 다른 서블릿이나 JSP(View)로 넘길 수 있음.
+
+요청 전달(forward) -> 클라이언트가 보낸 요청을 다른 서블릿이나 JSP로 넘겨서 그쪽에서 응답을 완성하게 함.
+
+이때 클라이언트는 내부적으로 이동한 사실을 모름(URL 변화 없음). -> 리다이렉트랑 다른 개념 
+
+1. 컨트롤러(Servlet)에서 최종적으로 보여줄 화면(JSP)의 위치를 문자열로 담음.
+
+2. RequestDispatcher dispatcher = request.getRequestDispatcher(viewPath);
+
+-> request 객체한테 viewPath 경로로 요청을 넘길 준비를 하는 것.  뷰로 이동하는 경로를 넘겨주는 것. 
+
+3. dispatcher.forward(request, response);
+
+-> 실제로 요청과 응답을 해당 JSP로 넘겨서, JSP가 응답을 만들도록 함. 
+
+/WEB-INF
+
+-> 이 경로안에 JSP가 있으면 외부에서 직접 JSP를 호출할 수 없다.
+
+우리가 기대하는 것은 항상 컨트롤러를 통해서 JSP를 호출하는 것이다.
+
+redirect vs forward
+
+리다이렉트는 실제 클라이언트(웹 브라우저)에 응답이 나갔다가, 클라이언트가 redirect 경로로 다시 요청한다.
+
+따라서 클라이언트가 인지할 수 있고, URL 경로도 실제로 변경된다. 반면에 포워드는 서버 내부에서 일어나는 호출이기 때문에
+
+클라이언트가 전혀 인지하지 못한다. 
+
+**회원 저장 - 뷰**
+
+**회원 저장 - 컨트롤러**
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+ <meta charset="UTF-8">
+ <title>Title</title>
+</head>
+<body>
+<!-- 상대경로 사용, [현재 URL이 속한 계층 경로 + /save] -->
+<form action="save" method="post">
+ username: <input type="text" name="username" />
+ age: <input type="text" name="age" />
+ <button type="submit">전송</button>
+</form>
+</body>
+</html>
+```
+
+위 jsp 파일을 보면 form action="save"을 보자. 만약에 /save였으면 localhost:8080/save로 절대경로로 지정된다.
+
+그런데 파일에서는 "save"이므로 localhost:8080/servlet-mvc/members/new-form에서 
+
+new-form을 지우고 save로 바꾼 것이 경로다. 
+
+따라서, localhost:8080/servlet-mvc/members/save로 요청하게 된다. 
+
+```java
+package hello.servlet.web.servletmvc;
+
+@WebServlet(name = "mvcMemberSaveServlet", urlPatterns = "/servlet-mvc/members/save")
+public class MvcMemberSaveServlet extends HttpServlet {
+
+  private MemberRepository memberRepository = MemberRepository.getInstance();
+
+  @Override
+  protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+    String username = request.getParameter("username");
+    int age = Integer.parseInt(request.getParameter("age"));
+
+    Member member = new Member(username, age);
+    memberRepository.save(member);
+
+    //Model에 데이터를 보관한다.
+    request.setAttribute("member", member);
+    //"member"를 key 값으로 두고 value값을 member 객체로 둔다. 
+
+    String viewPath = "/WEB-INF/views/save-result.jsp";
+    RequestDispatcher dispatcher = request.getRequestDispatcher(viewPath);
+    dispatcher.forward(request, response);
+  }
+
+}
+```
+
+그러면 아까 전에 작성한 jsp 파일에서 전송 버튼을 누르면 localhost:8080/servlet-mvc/members/new-form에서
+
+new-form을 지우고 save로 바꾼 것이 경로다. 이래서 mvcMemberSaveServlet이 호출 되고 쓰레드가 실행한다.
+
+입력한 이름과 나이를 Member 객체에 있는 멤버변수에 초기화를 하고 member객체를 MemberRepository에 보관한다.
+
+setAttribute는 이렇게 생각하면 된다.
+
+클라이언트에서 url을 입력해서 서버로 요청을 해야한다. 요청을 할 때, url에 맞는 서블릿을 서블릿 컨테이너에서 찾고 
+
+그 서블릿을 찾은 다음에 호출하고 쓰레드가 실행한다.
+
+이제 실행하는 과정중에 view로 이동하기 전에 데이터를 Model에 담는다. 
+
+그럼 이러한 데이터를 view에선 Model에 있는 데이터를 보고 화면에 띄우는 역할을 한다. 
+
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+성공
+<ul>
+    <li>id=${member.id}</li>  
+    <li>username=${member.username}</li>
+    <li>age=${member.age}</li>
+</ul>
+<a href="/index.html">메인</a>
+</body>
+</html> 
+```
+
+저기서 member.id, member.username, member.age를 꺼내려면 getAttribute 메서드를 쓰고 그 메서드의 리턴값은
+
+Object형이기 때문에 다운캐스팅도 해야하고 좀 머리가 많이 아프다.
+
+JSP에서는 ${}를 써서 캐스팅없이 편하게 속성값을 출력하게 해줌. 
+
+이번에는 회원 목록 조회 - 컨트롤러를 만들어보자.
+
+**회원 목록 조회 - 컨트롤러 코드**
+
+```java
+package hello.servlet.web.servletmvc;
+
+import hello.servlet.domain.member.MemberRepository;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.util.List;
+
+@WebServlet(name = "mvcMemberListServlet", urlPatterns = "/servlet-mvc/members")
+public class MvcMemberListServlet extends HttpServlet {
+
+  private MemberRepository memberRepository = MemberRepository.getInstance();
+
+  @Override
+  protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    System.out.println("MvcMemberListServlet.service");
+    List<Member> members = memberRepository.findAll();
+
+    request.setAttribute("members", members);
+
+    String viewPath = "/WEB-INF/views/members.jsp";
+    RequestDispatcher dispatcher = request.getRequestDispatcher(viewPath);
+    dispatcher.forward(request, response); 
+
+  }
+}
+```
+
+**회원 목록 조회 - 뷰**
+```html
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<a href="/index.html">메인</a>
+<table>
+    <thead>
+    <th>id</th>
+    <th>username</th>
+    <th>age</th>
+    </thead>
+    <tbody>
+    <c:forEach var="item" items="${members}">
+        <tr>
+            <td>${item.id}</td>
+            <td>${item.username}</td>
+            <td>${item.age}</td>
+        </tr>
+    </c:forEach>
+    </tbody>
+</table>
+</body>
+</html>
+```
+
+앞서 회원 등록과 저장을 하고나서 이러한 객체를 List에 담고 List에 저장된 객체를 가지고 회원의 속성값을 알아내야한다. 
+
+원래는 getAttribute 메서드를 쓰면 Object형이므로 다운 캐스팅을 해줘야 하지만 JSP는 $를 써서 캐스팅 불편함 없게 해준다. 
+
+지금까지 MVC 패턴을 적용해봤는데 마지막으로 정리를 해보자. 
+
+1. 먼저 mvcMemberFormServlet을 호출 하기 위해서 localhost:8080/servlet-mvc/members/new-form을 url에 입력한다.
+
+2. 이제 url을 입력했으므로 요청 메시지가 서버로 전달된다. 서버에서는 컨트롤러에서 뷰로 가야하는데 
+
+가기 전에 viewPath를 지정하고 dispatcher라는 객체를 이용하여 뷰로 간다.
+
+그리고 이 객체를 forward라는 메서드를 써서 해당 jsp 파일에 request, response를 넘긴다.
+
+3. 넘기고 나서 이제 클라이언트는 응답을 받아서 화면에 렌더링을 한다. 
+
+렌더링 화면은 username과 age를 입력하는 화면.
+
+이제 이 두개의 값을 입력하자.
+
+4. 그런데 new-form.jsp 파일을 보면 form action="save"가 있다. 이것은 상대경로를 사용한 것이다.
+
+상대경로를 사용하면 현재 경로에서 마지막 세그먼트를 빼고 /save로 대체한다. 
+
+5. 그러면 클라이언트에서는 서버로 url을 localhost:8080/servlet-mvc/members/save로 입력하고
+
+이제 이 url에 맞는 서블릿이 실행된다.
+
+mvcMemberSaveServlet에서는 jsp 파일에서 입력받은 이름과 나이값을 받고 이 두 변수를 바탕으로
+
+Member객체(엔티티)를 생성함. 
+
+그리고 이 객체를 가지고 저장소에 member 객체를 저장함. (HashMap<>()을 이용)
+
+6. 저장을 한 후에, model에 member 객체를 담는다. (value값으로)
+
+7. dispatcher가 viewPath를 받은 후 경로에 맞게 view로 감.
+
+8. jsp파일에서 request와 response 객체를 받아서 html 파일 내용 처리 
+
+
+
+
+
 
 
 
