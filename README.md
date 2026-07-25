@@ -55,3 +55,6 @@ spring-mvc-fundamentals-08
 - Gradle
 - IntelliJ IDEA
 - HTML
+
+## 참고
+- 코드 출처 : 스프링 MVC 1편 - 백엔드 웹 개발 핵심 기술
